@@ -1,6 +1,14 @@
 import { createClient } from "@supabase/supabase-js";
 
-export async function GET() {
+export async function GET(request: Request) {
+  const authorization = request.headers.get("authorization");
+
+  if (authorization !== `Bearer ${process.env.UPDATE_SECRET}`) {
+    return Response.json(
+      { error: "Nicht autorisiert." },
+      { status: 401 }
+    );
+  }
   // 1. Torschützenliste von API-Football abrufen
   const response = await fetch(
     "https://v3.football.api-sports.io/players/topscorers?league=78&season=2024",
