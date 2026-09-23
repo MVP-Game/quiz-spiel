@@ -57,7 +57,7 @@ export default async function QuestionPage({ params }: Props) {
 </div>
 
         <p className="text-xs text-gray-500 mt-6">
-          Quelle: {question.source}
+          Quelle: {question.updated_at}
         </p>
       </div>
     </main>
