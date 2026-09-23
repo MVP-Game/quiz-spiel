@@ -32,6 +32,7 @@ export async function GET(request: Request) {
 
   const spieler = topScorer.player.name;
   const tore = topScorer.statistics[0].goals.total;
+const updaterKey = "bundesliga_top_scorer";
 
   // 2. Serverseitige Verbindung zu Supabase
   const supabaseAdmin = createClient(
@@ -47,7 +48,7 @@ export async function GET(request: Request) {
       source: "API-Football – Bundesliga 2024/25",
       updated_at: new Date().toISOString(),
     })
-.eq("updater_key", "bundesliga_top_scorer")
+.eq("updater_key", updaterKey)
 .eq("update_type", "automatic")
 .select();
 
