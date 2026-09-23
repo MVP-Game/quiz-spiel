@@ -1,7 +1,33 @@
 import { createClient } from "@supabase/supabase-js";
 
-async function updateBundesligaTopScorer(): Promise<string> {
-return "bundesliga_top_scorer";
+async function updateBundesligaTopScorer(): Promise<{
+  updaterKey: string;
+  spieler: string;
+  tore: number;
+}> {
+  const updaterKey = "bundesliga_top_scorer";
+  const response = await fetch(
+    "https://v3.football.api-sports.io/players/topscorers?league=78&season=2024",
+    {
+      headers: {
+        "x-apisports-key": process.env.API_FOOTBALL_KEY!,
+      },
+      cache: "no-store",
+    }
+  );
+    const data = await response.json();
+      const topScorer = data.response?.[0];
+        if (!topScorer) {
+    return Response.json(
+      { error: "Kein Torschütze gefunden." },
+      { status: 500 }
+    );
+  }
+
+    const spieler = topScorer.player.name;
+  const tore = topScorer.statistics[0].goals.total;
+
+return { updaterKey, spieler, tore };
 }
 
 export async function GET(request: Request) {
@@ -14,29 +40,16 @@ export async function GET(request: Request) {
     );
   }
   // 1. Torschützenliste von API-Football abrufen
-  const response = await fetch(
-    "https://v3.football.api-sports.io/players/topscorers?league=78&season=2024",
-    {
-      headers: {
-        "x-apisports-key": process.env.API_FOOTBALL_KEY!,
-      },
-      cache: "no-store",
-    }
-  );
 
-  const data = await response.json();
-  const topScorer = data.response?.[0];
 
-  if (!topScorer) {
-    return Response.json(
-      { error: "Kein Torschütze gefunden." },
-      { status: 500 }
-    );
-  }
 
-  const spieler = topScorer.player.name;
-  const tore = topScorer.statistics[0].goals.total;
-const updaterKey = await updateBundesligaTopScorer();
+
+
+
+
+
+const { updaterKey, spieler, tore } =
+  await updateBundesligaTopScorer();
 
   // 2. Serverseitige Verbindung zu Supabase
   const supabaseAdmin = createClient(
