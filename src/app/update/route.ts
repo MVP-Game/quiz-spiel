@@ -1,5 +1,9 @@
 import { createClient } from "@supabase/supabase-js";
 
+async function updateBundesligaTopScorer(): Promise<string> {
+return "bundesliga_top_scorer";
+}
+
 export async function GET(request: Request) {
   const authorization = request.headers.get("authorization");
 
@@ -32,7 +36,7 @@ export async function GET(request: Request) {
 
   const spieler = topScorer.player.name;
   const tore = topScorer.statistics[0].goals.total;
-const updaterKey = "bundesliga_top_scorer";
+const updaterKey = await updateBundesligaTopScorer();
 
   // 2. Serverseitige Verbindung zu Supabase
   const supabaseAdmin = createClient(
