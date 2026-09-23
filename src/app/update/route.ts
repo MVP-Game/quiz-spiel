@@ -47,8 +47,9 @@ export async function GET(request: Request) {
       source: "API-Football – Bundesliga 2024/25",
       updated_at: new Date().toISOString(),
     })
-    .eq("id", 1)
-    .select();
+.eq("id", 1)
+.eq("update_type", "automatic")
+.select();
 
   if (error) {
     return Response.json(
