@@ -6,6 +6,7 @@ async function updateBundesligaTopScorer(): Promise<{
   updatedQuestion: unknown;
 }> {
   const updaterKey = "bundesliga_top_scorer";
+
   const response = await fetch(
     "https://v3.football.api-sports.io/players/topscorers?league=78&season=2024",
     {
@@ -15,16 +16,15 @@ async function updateBundesligaTopScorer(): Promise<{
       cache: "no-store",
     }
   );
-    const data = await response.json();
-      const topScorer = data.response?.[0];
-        if (!topScorer) {
-    return Response.json(
-      { error: "Kein Torschütze gefunden." },
-      { status: 500 }
-    );
+
+  const data = await response.json();
+  const topScorer = data.response?.[0];
+
+  if (!topScorer) {
+    throw new Error("Kein Torschütze gefunden.");
   }
 
-    const spieler = topScorer.player.name;
+  const spieler = topScorer.player.name;
   const tore = topScorer.statistics[0].goals.total;
 
   const supabaseAdmin = createClient(
@@ -32,32 +32,33 @@ async function updateBundesligaTopScorer(): Promise<{
     process.env.SUPABASE_SECRET_KEY!
   );
 
-
-
-    const { data: updatedQuestion, error } = await supabaseAdmin
+  const { data: updatedQuestion, error } = await supabaseAdmin
     .from("questions")
     .update({
       answer: `${spieler} (${tore} Tore)`,
       source: "API-Football – Bundesliga 2024/25",
       updated_at: new Date().toISOString(),
     })
-.eq("updater_key", updaterKey)
-.eq("update_type", "automatic")
-.select();
+    .eq("updater_key", updaterKey)
+    .eq("update_type", "automatic")
+    .select();
 
   if (error) {
-    return Response.json(
-      { error: error.message },
-      { status: 500 }
-    );
+    throw new Error(error.message);
   }
 
-return { spieler, tore, updatedQuestion };
+  return {
+    spieler,
+    tore,
+    updatedQuestion,
+  };
 }
 
 const updaters = {
   bundesliga_top_scorer: updateBundesligaTopScorer,
 };
+
+type UpdaterKey = keyof typeof updaters;
 
 export async function GET(request: Request) {
   const authorization = request.headers.get("authorization");
@@ -70,40 +71,60 @@ export async function GET(request: Request) {
   }
 
   const supabaseAdmin = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SECRET_KEY!
-);
-
-const { data: automaticQuestions, error: questionsError } =
-  await supabaseAdmin
-    .from("questions")
-    .select("id, updater_key")
-    .eq("update_type", "automatic");
-
-    if (questionsError) {
-  return Response.json(
-    { error: questionsError.message },
-    { status: 500 }
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SECRET_KEY!
   );
-}
 
-const {  spieler, tore, updatedQuestion } =
-  await updaters.bundesliga_top_scorer();
+  const { data: automaticQuestions, error: questionsError } =
+    await supabaseAdmin
+      .from("questions")
+      .select("id, updater_key")
+      .eq("update_type", "automatic");
 
-  // 2. Serverseitige Verbindung zu Supabase
+  if (questionsError) {
+    return Response.json(
+      { error: questionsError.message },
+      { status: 500 }
+    );
+  }
 
+  const updaterKeys = [
+    ...new Set(
+      (automaticQuestions ?? [])
+        .map((question) => question.updater_key)
+        .filter(
+          (key): key is UpdaterKey =>
+            typeof key === "string" && key in updaters
+        )
+    ),
+  ];
 
-  // 3. Karte #1 aktualisieren
+  const results: unknown[] = [];
 
+  try {
+    for (const updaterKey of updaterKeys) {
+      const result = await updaters[updaterKey]();
 
-
+      results.push({
+        updaterKey,
+        ...result,
+      });
+    }
+  } catch (error) {
+    return Response.json(
+      {
+        error:
+          error instanceof Error
+            ? error.message
+            : "Unbekannter Fehler beim Aktualisieren.",
+      },
+      { status: 500 }
+    );
+  }
 
   return Response.json({
-    automaticQuestions,
     erfolg: true,
-    karte: 1,
-    spieler,
-    tore,
-    aktualisierteZeilen: updatedQuestion,
+    anzahlUpdater: updaterKeys.length,
+    aktualisierteUpdater: results,
   });
 }
