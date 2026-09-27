@@ -54,8 +54,41 @@ async function updateBundesligaTopScorer(): Promise<{
   };
 }
 
+async function updateTestQuestion(): Promise<{
+  nachricht: string;
+  updatedQuestion: unknown;
+}> {
+  const updaterKey = "test_updater";
+
+  const supabaseAdmin = createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SECRET_KEY!
+  );
+
+  const { data: updatedQuestion, error } = await supabaseAdmin
+    .from("questions")
+    .update({
+      answer: "Test-Updater funktioniert",
+      source: "Automatischer Test-Updater",
+      updated_at: new Date().toISOString(),
+    })
+    .eq("updater_key", updaterKey)
+    .eq("update_type", "automatic")
+    .select();
+
+  if (error) {
+    throw new Error(error.message);
+  }
+
+  return {
+    nachricht: "Test-Updater erfolgreich",
+    updatedQuestion,
+  };
+}
+
 const updaters = {
   bundesliga_top_scorer: updateBundesligaTopScorer,
+  test_updater: updateTestQuestion,
 };
 
 type UpdaterKey = keyof typeof updaters;
