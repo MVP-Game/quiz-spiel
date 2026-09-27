@@ -32,6 +32,8 @@ async function updateBundesligaTopScorer(): Promise<{
     process.env.SUPABASE_SECRET_KEY!
   );
 
+
+
     const { data: updatedQuestion, error } = await supabaseAdmin
     .from("questions")
     .update({
@@ -66,14 +68,24 @@ export async function GET(request: Request) {
       { status: 401 }
     );
   }
-  // 1. Torschützenliste von API-Football abrufen
 
+  const supabaseAdmin = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.SUPABASE_SECRET_KEY!
+);
 
+const { data: automaticQuestions, error: questionsError } =
+  await supabaseAdmin
+    .from("questions")
+    .select("id, updater_key")
+    .eq("update_type", "automatic");
 
-
-
-
-
+    if (questionsError) {
+  return Response.json(
+    { error: questionsError.message },
+    { status: 500 }
+  );
+}
 
 const {  spieler, tore, updatedQuestion } =
   await updaters.bundesliga_top_scorer();
@@ -87,6 +99,7 @@ const {  spieler, tore, updatedQuestion } =
 
 
   return Response.json({
+    automaticQuestions,
     erfolg: true,
     karte: 1,
     spieler,
