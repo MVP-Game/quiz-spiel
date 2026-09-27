@@ -4,6 +4,7 @@ async function updateBundesligaTopScorer(): Promise<{
   updaterKey: string;
   spieler: string;
   tore: number;
+  updatedQuestion: unknown;
 }> {
   const updaterKey = "bundesliga_top_scorer";
   const response = await fetch(
@@ -27,7 +28,30 @@ async function updateBundesligaTopScorer(): Promise<{
     const spieler = topScorer.player.name;
   const tore = topScorer.statistics[0].goals.total;
 
-return { updaterKey, spieler, tore };
+  const supabaseAdmin = createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SECRET_KEY!
+  );
+
+    const { data: updatedQuestion, error } = await supabaseAdmin
+    .from("questions")
+    .update({
+      answer: `${spieler} (${tore} Tore)`,
+      source: "API-Football – Bundesliga 2024/25",
+      updated_at: new Date().toISOString(),
+    })
+.eq("updater_key", updaterKey)
+.eq("update_type", "automatic")
+.select();
+
+  if (error) {
+    return Response.json(
+      { error: error.message },
+      { status: 500 }
+    );
+  }
+
+return { updaterKey, spieler, tore, updatedQuestion };
 }
 
 export async function GET(request: Request) {
@@ -48,33 +72,16 @@ export async function GET(request: Request) {
 
 
 
-const { updaterKey, spieler, tore } =
+const { updaterKey, spieler, tore, updatedQuestion } =
   await updateBundesligaTopScorer();
 
   // 2. Serverseitige Verbindung zu Supabase
-  const supabaseAdmin = createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SECRET_KEY!
-  );
+
 
   // 3. Karte #1 aktualisieren
-  const { data: updatedQuestion, error } = await supabaseAdmin
-    .from("questions")
-    .update({
-      answer: `${spieler} (${tore} Tore)`,
-      source: "API-Football – Bundesliga 2024/25",
-      updated_at: new Date().toISOString(),
-    })
-.eq("updater_key", updaterKey)
-.eq("update_type", "automatic")
-.select();
 
-  if (error) {
-    return Response.json(
-      { error: error.message },
-      { status: 500 }
-    );
-  }
+
+
 
   return Response.json({
     erfolg: true,
