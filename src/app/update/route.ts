@@ -1,7 +1,6 @@
 import { createClient } from "@supabase/supabase-js";
 
 async function updateBundesligaTopScorer(): Promise<{
-  updaterKey: string;
   spieler: string;
   tore: number;
   updatedQuestion: unknown;
@@ -51,7 +50,7 @@ async function updateBundesligaTopScorer(): Promise<{
     );
   }
 
-return { updaterKey, spieler, tore, updatedQuestion };
+return { spieler, tore, updatedQuestion };
 }
 
 export async function GET(request: Request) {
@@ -72,7 +71,7 @@ export async function GET(request: Request) {
 
 
 
-const { updaterKey, spieler, tore, updatedQuestion } =
+const {  spieler, tore, updatedQuestion } =
   await updateBundesligaTopScorer();
 
   // 2. Serverseitige Verbindung zu Supabase
