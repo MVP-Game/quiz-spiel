@@ -4,8 +4,13 @@ import { updateBundesligaStandings } from "@/lib/updaters/bundesligaStandings";
 
 const updaterGroups = {
   bundesliga_top_scorer: "bundesliga_top_scorers",
+
   bundesliga_leader: "bundesliga_standings",
   bundesliga_second: "bundesliga_standings",
+  bundesliga_last: "bundesliga_standings",
+  bundesliga_most_goals: "bundesliga_standings",
+  bundesliga_fewest_conceded: "bundesliga_standings",
+  bundesliga_best_goal_difference: "bundesliga_standings",
 } as const;
 
 type UpdaterKey = keyof typeof updaterGroups;
