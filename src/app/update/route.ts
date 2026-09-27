@@ -53,6 +53,10 @@ async function updateBundesligaTopScorer(): Promise<{
 return { spieler, tore, updatedQuestion };
 }
 
+const updaters = {
+  bundesliga_top_scorer: updateBundesligaTopScorer,
+};
+
 export async function GET(request: Request) {
   const authorization = request.headers.get("authorization");
 
@@ -72,7 +76,7 @@ export async function GET(request: Request) {
 
 
 const {  spieler, tore, updatedQuestion } =
-  await updateBundesligaTopScorer();
+  await updaters.bundesliga_top_scorer();
 
   // 2. Serverseitige Verbindung zu Supabase
 
