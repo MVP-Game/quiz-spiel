@@ -1,4 +1,5 @@
 import { createClient } from "@supabase/supabase-js";
+import { fetchApiFootball } from "@/lib/football/apiFootball";
 
 export async function updateBundesligaTopScorer(): Promise<{
   spieler: string;
@@ -7,17 +8,10 @@ export async function updateBundesligaTopScorer(): Promise<{
 }> {
   const updaterKey = "bundesliga_top_scorer";
 
-  const response = await fetch(
-    "https://v3.football.api-sports.io/players/topscorers?league=78&season=2024",
-    {
-      headers: {
-        "x-apisports-key": process.env.API_FOOTBALL_KEY!,
-      },
-      cache: "no-store",
-    }
+  const data = await fetchApiFootball(
+    "/players/topscorers?league=78&season=2024"
   );
 
-  const data = await response.json();
   const topScorer = data.response?.[0];
 
   if (!topScorer) {

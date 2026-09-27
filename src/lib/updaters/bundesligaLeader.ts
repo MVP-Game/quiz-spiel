@@ -1,4 +1,5 @@
 import { createClient } from "@supabase/supabase-js";
+import { fetchApiFootball } from "@/lib/football/apiFootball";
 
 export async function updateBundesligaLeader(): Promise<{
   verein: string;
@@ -7,17 +8,9 @@ export async function updateBundesligaLeader(): Promise<{
 }> {
   const updaterKey = "bundesliga_leader";
 
-  const response = await fetch(
-    "https://v3.football.api-sports.io/standings?league=78&season=2024",
-    {
-      headers: {
-        "x-apisports-key": process.env.API_FOOTBALL_KEY!,
-      },
-      cache: "no-store",
-    }
+  const data = await fetchApiFootball(
+    "/standings?league=78&season=2024"
   );
-
-  const data = await response.json();
 
   const table = data.response?.[0]?.league?.standings?.[0];
   const leader = table?.[0];
