@@ -54,11 +54,34 @@ async function updateBundesligaTopScorer(): Promise<{
   };
 }
 
-async function updateTestQuestion(): Promise<{
-  nachricht: string;
+async function updateBundesligaLeader(): Promise<{
+  verein: string;
+  punkte: number;
   updatedQuestion: unknown;
 }> {
-  const updaterKey = "test_updater";
+  const updaterKey = "bundesliga_leader";
+
+  const response = await fetch(
+    "https://v3.football.api-sports.io/standings?league=78&season=2024",
+    {
+      headers: {
+        "x-apisports-key": process.env.API_FOOTBALL_KEY!,
+      },
+      cache: "no-store",
+    }
+  );
+
+  const data = await response.json();
+
+  const table = data.response?.[0]?.league?.standings?.[0];
+  const leader = table?.[0];
+
+  if (!leader) {
+    throw new Error("Kein Tabellenführer gefunden.");
+  }
+
+  const verein = leader.team.name;
+  const punkte = leader.points;
 
   const supabaseAdmin = createClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -68,8 +91,8 @@ async function updateTestQuestion(): Promise<{
   const { data: updatedQuestion, error } = await supabaseAdmin
     .from("questions")
     .update({
-      answer: "Test-Updater funktioniert",
-      source: "Automatischer Test-Updater",
+      answer: `${verein} (${punkte} Punkte)`,
+      source: "API-Football – Bundesliga 2024/25",
       updated_at: new Date().toISOString(),
     })
     .eq("updater_key", updaterKey)
@@ -81,14 +104,15 @@ async function updateTestQuestion(): Promise<{
   }
 
   return {
-    nachricht: "Test-Updater erfolgreich",
+    verein,
+    punkte,
     updatedQuestion,
   };
 }
 
 const updaters = {
   bundesliga_top_scorer: updateBundesligaTopScorer,
-  test_updater: updateTestQuestion,
+  bundesliga_leader: updateBundesligaLeader,
 };
 
 type UpdaterKey = keyof typeof updaters;
