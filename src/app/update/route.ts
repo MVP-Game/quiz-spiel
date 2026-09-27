@@ -1,13 +1,14 @@
 import { createClient } from "@supabase/supabase-js";
 import { updateBundesligaTopScorer } from "@/lib/updaters/bundesligaTopScorer";
-import { updateBundesligaLeader } from "@/lib/updaters/bundesligaLeader";
+import { updateBundesligaStandings } from "@/lib/updaters/bundesligaStandings";
 
-const updaters = {
-  bundesliga_top_scorer: updateBundesligaTopScorer,
-  bundesliga_leader: updateBundesligaLeader,
-};
+const updaterGroups = {
+  bundesliga_top_scorer: "bundesliga_top_scorers",
+  bundesliga_leader: "bundesliga_standings",
+  bundesliga_second: "bundesliga_standings",
+} as const;
 
-type UpdaterKey = keyof typeof updaters;
+type UpdaterKey = keyof typeof updaterGroups;
 
 export async function GET(request: Request) {
   const authorization = request.headers.get("authorization");
@@ -43,20 +44,33 @@ export async function GET(request: Request) {
         .map((question) => question.updater_key)
         .filter(
           (key): key is UpdaterKey =>
-            typeof key === "string" && key in updaters
+            typeof key === "string" && key in updaterGroups
         )
     ),
   ];
 
+  const groups = new Set(
+    updaterKeys.map((updaterKey) => updaterGroups[updaterKey])
+  );
+
   const results: unknown[] = [];
 
   try {
-    for (const updaterKey of updaterKeys) {
-      const result = await updaters[updaterKey]();
+    if (groups.has("bundesliga_top_scorers")) {
+      const result = await updateBundesligaTopScorer();
 
       results.push({
-        updaterKey,
-        ...result,
+        gruppe: "bundesliga_top_scorers",
+        result,
+      });
+    }
+
+    if (groups.has("bundesliga_standings")) {
+      const result = await updateBundesligaStandings();
+
+      results.push({
+        gruppe: "bundesliga_standings",
+        result,
       });
     }
   } catch (error) {
@@ -73,7 +87,8 @@ export async function GET(request: Request) {
 
   return Response.json({
     erfolg: true,
-    anzahlUpdater: updaterKeys.length,
-    aktualisierteUpdater: results,
+    anzahlFrageTypen: updaterKeys.length,
+    anzahlApiGruppen: groups.size,
+    aktualisierteGruppen: results,
   });
 }
